@@ -1,0 +1,7 @@
+{
+  "name": "PetroSim - Drilling Simulation",
+  "description": "Educational 3D drilling rig simulation and learning platform for Petroleum and Natural Gas Engineering students.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
