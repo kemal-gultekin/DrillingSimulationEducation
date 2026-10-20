@@ -1,3 +1,5 @@
+import { LocalizedString } from '../i18n/types';
+
 export interface StudentRecord {
   id: string;
   studentNumber: string;
@@ -7,17 +9,17 @@ export interface StudentRecord {
   completedModulesCount: number;
   quizzesCompleted: number;
   scenariosCompleted: number;
-  weakTopics: string[];
-  strongTopics: string[];
-  lastActive: string;
+  weakTopics: LocalizedString[] | string[];
+  strongTopics: LocalizedString[] | string[];
+  lastActive: LocalizedString | string;
   assignmentStatus: 'Tamamlandı' | 'Devam Ediyor' | 'Başlanmadı';
 }
 
 export interface Assignment {
   id: string;
-  title: string;
+  title: LocalizedString | string;
   dueDate: string;
-  description: string;
+  description: LocalizedString | string;
   requiredScenarios: string[];
   targetScore: number;
   enrolledStudentsCount: number;
@@ -35,7 +37,10 @@ export const MOCK_STUDENTS: StudentRecord[] = [
     scenariosCompleted: 4,
     weakTopics: ['Choke Manifold Basınç Ayarı'],
     strongTopics: ['Hidrostatik Basınç', 'BOP İşletimi', 'H2S Güvenliği'],
-    lastActive: 'Bugün, 14:20',
+    lastActive: {
+      tr: 'Bugün, 14:20',
+      en: 'Today, 14:20'
+    },
     assignmentStatus: 'Tamamlandı'
   },
   {
@@ -48,7 +53,10 @@ export const MOCK_STUDENTS: StudentRecord[] = [
     scenariosCompleted: 3,
     weakTopics: ['Diferansiyel Sıkışma Teşhisi', 'ECD Hesaplama'],
     strongTopics: ['KKD Standartları', 'Basınç Gradyanı'],
-    lastActive: 'Dün, 18:45',
+    lastActive: {
+      tr: 'Dün, 18:45',
+      en: 'Yesterday, 18:45'
+    },
     assignmentStatus: 'Tamamlandı'
   },
   {
@@ -61,7 +69,10 @@ export const MOCK_STUDENTS: StudentRecord[] = [
     scenariosCompleted: 2,
     weakTopics: ['Shut-in Prosedürü', 'MAASP Sınırı', 'LOTO'],
     strongTopics: ['Kule Ekipman Tanıma'],
-    lastActive: '2 gün önce',
+    lastActive: {
+      tr: '2 gün önce',
+      en: '2 days ago'
+    },
     assignmentStatus: 'Devam Ediyor'
   },
   {
@@ -74,7 +85,10 @@ export const MOCK_STUDENTS: StudentRecord[] = [
     scenariosCompleted: 2,
     weakTopics: ['Akış Kontrolü (Flow Check)', 'Atık Çukuru Yönetimi'],
     strongTopics: ['Wait & Weight Yöntemi'],
-    lastActive: '3 gün önce',
+    lastActive: {
+      tr: '3 gün önce',
+      en: '3 days ago'
+    },
     assignmentStatus: 'Devam Ediyor'
   }
 ];
@@ -82,9 +96,15 @@ export const MOCK_STUDENTS: StudentRecord[] = [
 export const MOCK_ASSIGNMENTS: Assignment[] = [
   {
     id: 'asg-1',
-    title: 'Well Control & Hydrostatic Pressure Benchmark',
+    title: {
+      tr: 'Kuyu Kontrolü & Hidrostatik Basınç Ödevi',
+      en: 'Well Control & Hydrostatic Pressure Benchmark'
+    },
     dueDate: '2026-10-15',
-    description: '10,200 ft TVD gazlı kumtaşı kuyusunda Kick teşhisi, yumuşak kapatma ve Kill Sheet hesaplama ödevi.',
+    description: {
+      tr: '10,200 ft TVD gazlı kumtaşı kuyusunda Kick teşhisi, yumuşak kapatma ve Kill Sheet hesaplama ödevi.',
+      en: '10,200 ft TVD gas sandstone kick diagnosis, soft shut-in, and kill sheet calculations.'
+    },
     requiredScenarios: ['scenario-kick', 'hydrostatic-pressure', 'formation-pressure'],
     targetScore: 80,
     enrolledStudentsCount: 42,
@@ -92,9 +112,15 @@ export const MOCK_ASSIGNMENTS: Assignment[] = [
   },
   {
     id: 'asg-2',
-    title: 'HSE & Rig Floor Safety Certification',
+    title: {
+      tr: 'İSG & Kule Tabanı Güvenlik Sertifikasyonu',
+      en: 'HSE & Rig Floor Safety Certification'
+    },
     dueDate: '2026-10-22',
-    description: 'H2S tahliyesi, LOTO enerji izolasyonu, kule tabanı kırmızı bölge ve atık yönetimi modüllerinin tamamlanması.',
+    description: {
+      tr: 'H2S tahliyesi, LOTO enerji izolasyonu, kule tabanı kırmızı bölge ve atık yönetimi modüllerinin tamamlanması.',
+      en: 'Completion of H2S evacuation, LOTO isolation, rig floor red zone, and drilling waste management modules.'
+    },
     requiredScenarios: ['safe-ppe-1', 'safe-h2s-1', 'safe-loto-1'],
     targetScore: 85,
     enrolledStudentsCount: 42,

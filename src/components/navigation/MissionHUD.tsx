@@ -13,6 +13,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { GuidedMission } from '../../types';
+import { useI18n } from '../../i18n';
 
 interface MissionHUDProps {
   activeMission: GuidedMission | null;
@@ -41,10 +42,15 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
   isJustCompleted = false,
   nearbyEquipmentId
 }) => {
+  const { t, resolveText, lang } = useI18n();
   const [showHint, setShowHint] = useState(false);
 
   const isAllCompleted = completedMissionIds.length >= totalMissions && totalMissions > 0;
   const isTargetNearby = activeMission && nearbyEquipmentId === activeMission.targetEquipmentId;
+
+  const missionTitle = activeMission ? resolveText(activeMission.title, activeMission.turkishTitle) : '';
+  const missionInstruction = activeMission ? resolveText(activeMission.instruction, activeMission.turkishInstruction) : '';
+  const missionHint = activeMission ? resolveText(activeMission.hint, activeMission.turkishHint) : '';
 
   // 1. Minimized / Inactive floating launcher in Walk mode
   if (!isActive) {
@@ -60,14 +66,14 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
           <div className="text-left mr-1">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-bold text-white tracking-wide">
-                Rehberli Saha Turu
+                {t('hud.tourTitle')}
               </span>
               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-semibold">
                 {completedMissionIds.length}/{totalMissions}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 font-medium">
-              {isAllCompleted ? 'Tüm görevler tamamlandı' : 'Sıralı saha keşif görevleri'}
+              {isAllCompleted ? t('hud.allMissionsDoneBadge') : t('hud.sequentialMissions')}
             </p>
           </div>
 
@@ -79,12 +85,12 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
             {isAllCompleted ? (
               <>
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Tekrarla</span>
+                <span>{t('hud.repeatTour')}</span>
               </>
             ) : (
               <>
                 <Play className="w-3.5 h-3.5 fill-current" />
-                <span>{completedMissionIds.length > 0 ? 'Devam Et' : 'Turu Başlat'}</span>
+                <span>{completedMissionIds.length > 0 ? t('hud.continueTour') : t('hud.tourStart')}</span>
               </>
             )}
           </button>
@@ -107,16 +113,16 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
             </div>
             <div>
               <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider block">
-                Saha Oryantasyonu Tamamlandı
+                {t('hud.orientationCompleted')}
               </span>
               <h4 className="text-sm font-bold text-white leading-tight">
-                Tüm Görevler Başarıyla Bitti!
+                {t('hud.allMissionsCompleted')}
               </h4>
             </div>
           </div>
 
           <p className="text-xs text-slate-300 mb-3 leading-relaxed">
-            Tebrikler! Sondaj sahasındaki 8 kritik ekipmanı yürüyüş modunda bizzat ziyaret edip teknik özelliklerini incelediniz.
+            {t('hud.allMissionsCompletedDesc')}
           </p>
 
           <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
@@ -125,13 +131,13 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
               className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-semibold transition-all cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Turu Baştan Al</span>
+              <span>{t('hud.restartTour')}</span>
             </button>
             <button
               onClick={onPauseTour}
               className="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-all cursor-pointer"
             >
-              Kapat
+              {t('hud.closeTour')}
             </button>
           </div>
         </div>
@@ -163,11 +169,11 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
-                  Görev {currentMissionIndex + 1} / {totalMissions}
+                  {t('hud.tourStep', { current: currentMissionIndex + 1, total: totalMissions })}
                 </span>
                 {completedMissionIds.includes(activeMission?.id || '') && !isJustCompleted && (
                   <span className="text-[9px] font-mono bg-emerald-500/20 text-emerald-300 px-1 py-0.2 rounded border border-emerald-500/30">
-                    Tamamlandı
+                    {t('hud.completedBadge')}
                   </span>
                 )}
               </div>
@@ -180,7 +186,7 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
               <button
                 onClick={() => onSelectMissionIndex(currentMissionIndex - 1)}
                 className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                title="Önceki Görev"
+                title={t('hud.prevMission')}
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
@@ -189,7 +195,7 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
               <button
                 onClick={() => onSelectMissionIndex(currentMissionIndex + 1)}
                 className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                title="Sonraki Görev"
+                title={t('hud.nextMission')}
               >
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
@@ -198,7 +204,7 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
             <button
               onClick={onPauseTour}
               className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-              title="Turu Duraklat / Gizle"
+              title={t('hud.pauseHideTour')}
             >
               <Pause className="w-3.5 h-3.5" />
             </button>
@@ -230,13 +236,13 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
           <div className="py-2 text-center animate-in fade-in zoom-in-95 duration-200">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-xs font-bold mb-1">
               <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
-              <span>GÖREV TAMAMLANDI!</span>
+              <span>{t('hud.missionCompletedBadge')}</span>
             </div>
             <p className="text-xs font-medium text-emerald-100">
-              {activeMission?.turkishTitle} başarıyla incelendi.
+              {t('hud.missionExaminedSuccess', { title: missionTitle })}
             </p>
             <p className="text-[10px] text-emerald-300/80 font-mono mt-0.5">
-              Sıradaki göreve geçiliyor...
+              {t('hud.movingToNextMission')}
             </p>
           </div>
         ) : (
@@ -244,16 +250,18 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
             {/* Objective Title */}
             <div className="mb-1.5">
               <h4 className="text-xs font-bold text-white flex items-center justify-between">
-                <span>{activeMission?.title}</span>
+                <span>{missionTitle}</span>
               </h4>
-              <p className="text-[11px] text-amber-300/90 font-medium">
-                {activeMission?.turkishTitle}
-              </p>
+              {activeMission?.turkishTitle && lang === 'en' && (
+                <p className="text-[11px] text-amber-300/90 font-medium">
+                  {activeMission.turkishTitle}
+                </p>
+              )}
             </div>
 
             {/* Instruction description */}
             <p className="text-[11px] text-slate-300 leading-relaxed mb-2">
-              {activeMission?.turkishInstruction}
+              {missionInstruction}
             </p>
 
             {/* Target Nearby Notification */}
@@ -263,10 +271,10 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
                   <div className="w-5 h-5 rounded-md bg-amber-500 text-slate-950 font-mono font-black text-xs flex items-center justify-center">
                     E
                   </div>
-                  <span className="text-[11px] font-bold">Hedefe ulaştınız! [E] İncele</span>
+                  <span className="text-[11px] font-bold">{t('hud.approachedTarget')}</span>
                 </div>
                 <span className="text-[10px] font-mono bg-amber-400/20 px-1.5 py-0.5 rounded text-amber-300">
-                  Hazır
+                  {lang === 'tr' ? 'Hazır' : 'Ready'}
                 </span>
               </div>
             ) : (
@@ -277,12 +285,18 @@ export const MissionHUD: React.FC<MissionHUDProps> = ({
                   className="flex items-center gap-1 text-[10px] font-medium text-slate-400 hover:text-amber-300 transition-colors cursor-pointer"
                 >
                   <HelpCircle className="w-3 h-3 text-amber-400/80" />
-                  <span>{showHint ? 'İpucunu Gizle' : 'Nerede Bulabilirim? (İpucu)'}</span>
+                  <span>
+                    {showHint
+                      ? (lang === 'tr' ? 'İpucunu Gizle' : 'Hide Hint')
+                      : (lang === 'tr' ? 'Nerede Bulabilirim? (İpucu)' : 'Where can I find it? (Hint)')}
+                  </span>
                 </button>
                 {showHint && (
                   <div className="mt-1.5 p-2 rounded-lg bg-slate-900/90 border border-slate-800 text-[10px] text-slate-300 leading-normal animate-in fade-in duration-150">
-                    <span className="text-amber-400 font-bold block mb-0.5">Konum İpucu:</span>
-                    {activeMission?.turkishHint}
+                    <span className="text-amber-400 font-bold block mb-0.5">
+                      {lang === 'tr' ? 'Konum İpucu:' : 'Location Hint:'}
+                    </span>
+                    {missionHint}
                   </div>
                 )}
               </div>

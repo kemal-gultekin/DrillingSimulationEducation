@@ -5,18 +5,17 @@ import { SAFETY_QUESTIONS } from '../data/safety';
 import { DRILLING_SCENARIOS } from '../data/scenarios';
 import { ENGINEERING_MODULES } from '../data/engineering';
 import { GUIDED_MISSIONS } from '../data/missions';
+import { useI18n } from '../i18n';
 import { 
   Award, 
-  CheckCircle2, 
   TrendingUp, 
-  BookOpen, 
   Layers, 
   ShieldCheck, 
-  AlertCircle,
-  Download,
-  Flame,
-  Brain,
-  Compass
+  Download, 
+  Flame, 
+  Brain, 
+  Compass,
+  RotateCcw
 } from 'lucide-react';
 
 interface ProgressPanelProps {
@@ -28,6 +27,8 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
   progress,
   onResetProgress
 }) => {
+  const { t, lang } = useI18n();
+
   const equipmentRatio = Math.round((progress.completedEquipment.length / EQUIPMENT_LIST.length) * 100);
   const missionsTotal = GUIDED_MISSIONS.length;
   const missionsCompletedCount = (progress.completedMissions || []).length;
@@ -62,10 +63,16 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
     downloadAnchor.remove();
   };
 
+  const handleReset = () => {
+    if (window.confirm(t('progress.resetConfirm'))) {
+      if (onResetProgress) onResetProgress();
+    }
+  };
+
   return (
     <div
       id="progress-panel"
-      className="absolute top-16 left-4 z-20 w-[460px] max-h-[calc(100vh-5.5rem)] bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl flex flex-col text-slate-200 overflow-y-auto"
+      className="absolute top-16 left-4 z-20 w-[460px] max-h-[calc(100vh-5.5rem)] bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl flex flex-col text-slate-200 overflow-y-auto select-none"
     >
       {/* Header */}
       <div className="p-4 border-b border-slate-800 sticky top-0 bg-slate-900/95 backdrop-blur-md z-10 flex items-center justify-between">
@@ -74,20 +81,32 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
             <Award className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="font-bold text-sm text-white">Öğrenci Performans & İlerleme Raporu</h2>
-            <p className="text-[11px] text-slate-400">PetroSim Akademik Değerlendirme</p>
+            <h2 className="font-bold text-sm text-white">{t('progress.title')}</h2>
+            <p className="text-[11px] text-slate-400">{t('progress.subtitle')}</p>
           </div>
         </div>
 
-        <button
-          id="export-progress-json-btn"
-          onClick={handleExportJson}
-          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors flex items-center gap-1 text-[11px]"
-          title="İlerlemeyi JSON Olarak İndir (Spring Boot API Uyumlu)"
-        >
-          <Download className="w-3.5 h-3.5 text-amber-400" />
-          JSON
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            id="export-progress-json-btn"
+            onClick={handleExportJson}
+            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors flex items-center gap-1 text-[11px] cursor-pointer"
+            title="JSON Export"
+          >
+            <Download className="w-3.5 h-3.5 text-amber-400" />
+            <span>JSON</span>
+          </button>
+          {onResetProgress && (
+            <button
+              id="reset-progress-btn"
+              onClick={handleReset}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-950/40 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
+              title={t('progress.resetProgress')}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Content */}
@@ -95,21 +114,21 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
         {/* Total Score Banner */}
         <div className="bg-gradient-to-br from-amber-500/15 via-slate-900 to-slate-950 p-4 rounded-xl border border-amber-500/30 text-center space-y-1">
           <span className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">
-            Kümülatif Başarı Skoru
+            {t('progress.cumulativeScore')}
           </span>
           <div className="text-4xl font-black text-amber-400 font-mono tracking-tight">
             {totalScore}
           </div>
           <p className="text-[11px] text-slate-300">
-            Sondaj sahası keşfi, İSG soruları, mühendislik hesapları ve kuyu kontrolü başarı puanı
+            {t('progress.cumulativeDesc')}
           </p>
         </div>
 
         {/* Modules Progress Breakdown */}
         <div className="space-y-2.5">
           <div className="text-slate-300 font-semibold text-xs border-b border-slate-800 pb-1 flex items-center justify-between">
-            <span>Modül Tamamlama Durumları</span>
-            <span className="text-[10px] text-slate-500 font-mono">5 Temel Alan</span>
+            <span>{t('progress.moduleStatusTitle')}</span>
+            <span className="text-[10px] text-slate-500 font-mono">5 {t('progress.keyAreas')}</span>
           </div>
 
           {/* 1. Exploration */}
@@ -117,7 +136,7 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
             <div className="flex justify-between items-center text-xs">
               <span className="flex items-center gap-1.5 font-medium text-slate-200">
                 <Layers className="w-3.5 h-3.5 text-sky-400" />
-                Sondaj Sahası ve Ekipman Keşfi
+                {t('progress.exploredEquipment')}
               </span>
               <span className="font-mono text-slate-300 font-bold">
                 {progress.completedEquipment.length} / {EQUIPMENT_LIST.length}
@@ -136,10 +155,10 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
             <div className="flex justify-between items-center text-xs">
               <span className="flex items-center gap-1.5 font-medium text-slate-200">
                 <Compass className="w-3.5 h-3.5 text-amber-400" />
-                Rehberli Saha Görevleri (Walk Mode)
+                {t('progress.guidedMissionsLabel')}
               </span>
               <span className="font-mono text-slate-300 font-bold">
-                {missionsCompletedCount} / {missionsTotal} Görev
+                {missionsCompletedCount} / {missionsTotal}
               </span>
             </div>
             <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
@@ -155,10 +174,10 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
             <div className="flex justify-between items-center text-xs">
               <span className="flex items-center gap-1.5 font-medium text-slate-200">
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                İSG & Saha Emniyeti Sertifikasyonu
+                {t('progress.safetyQuizScore')}
               </span>
               <span className="font-mono text-slate-300 font-bold">
-                {safetyCorrectCount} / {safetyQuestionsTotal} Doğru
+                {safetyCorrectCount} / {safetyQuestionsTotal}
               </span>
             </div>
             <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
@@ -174,10 +193,10 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
             <div className="flex justify-between items-center text-xs">
               <span className="flex items-center gap-1.5 font-medium text-slate-200">
                 <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                Mühendislik Hesaplama Egzersizleri
+                {t('progress.calculationsCompleted')}
               </span>
               <span className="font-mono text-slate-300 font-bold">
-                {calculationsDoneCount} / {calculationsTotal} Modül
+                {calculationsDoneCount} / {calculationsTotal}
               </span>
             </div>
             <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
@@ -193,10 +212,10 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
             <div className="flex justify-between items-center text-xs">
               <span className="flex items-center gap-1.5 font-medium text-slate-200">
                 <Flame className="w-3.5 h-3.5 text-orange-400" />
-                Sondaj Kriz Senaryoları & Karar Verme
+                {t('progress.scenariosSolved')}
               </span>
               <span className="font-mono text-slate-300 font-bold">
-                {scenariosCompletedCount} / {scenariosTotal} Çözüldü
+                {scenariosCompletedCount} / {scenariosTotal}
               </span>
             </div>
             <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
@@ -212,24 +231,24 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
         <div className="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800 space-y-2">
           <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-xs">
             <Brain className="w-3.5 h-3.5 text-purple-400" />
-            <span>Mühendislik Yetkinlik Özeti</span>
+            <span>{t('progress.competencyTitle')}</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-[11px]">
             <div className="p-2 rounded bg-emerald-950/20 border border-emerald-900/40 text-emerald-300">
-              <span className="font-bold block mb-0.5">Güçlü Alanlar:</span>
+              <span className="font-bold block mb-0.5">{t('progress.strongAreas')}</span>
               <ul className="list-disc list-inside space-y-0.5 text-[10px] text-slate-300">
-                <li>Hidrostatik Basınç & MW</li>
-                <li>KKD & Saha Güvenliği</li>
-                <li>BOP Fonksiyonları</li>
+                <li>{lang === 'tr' ? 'Hidrostatik Basınç & MW' : 'Hydrostatic Pressure & MW'}</li>
+                <li>{lang === 'tr' ? 'KKD & Saha Güvenliği' : 'PPE & Rig Safety'}</li>
+                <li>{lang === 'tr' ? 'BOP Fonksiyonları' : 'BOP Stack Functions'}</li>
               </ul>
             </div>
             <div className="p-2 rounded bg-amber-950/20 border border-amber-900/40 text-amber-300">
-              <span className="font-bold block mb-0.5">Tekrar Önerilenler:</span>
+              <span className="font-bold block mb-0.5">{t('progress.reviewRecommended')}</span>
               <ul className="list-disc list-inside space-y-0.5 text-[10px] text-slate-300">
-                <li>Choke Manifold Basınç Ayarı</li>
-                <li>Diferansiyel Sıkışma Teşhisi</li>
-                <li>MAASP Limit Hesabı</li>
+                <li>{lang === 'tr' ? 'Choke Manifold Basınç Ayarı' : 'Choke Manifold Setting'}</li>
+                <li>{lang === 'tr' ? 'Diferansiyel Sıkışma Teşhisi' : 'Differential Sticking Diagnosis'}</li>
+                <li>{lang === 'tr' ? 'MAASP Limit Hesabı' : 'MAASP Calculation'}</li>
               </ul>
             </div>
           </div>
@@ -239,10 +258,10 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
         <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-[10px] text-slate-400 space-y-1">
           <div className="flex items-center gap-1.5 text-slate-300 font-semibold">
             <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-            <span>Backend Hazırlığı (Spring Boot & PostgreSQL Mimarisi)</span>
+            <span>{t('progress.backendNoticeTitle')}</span>
           </div>
           <p className="text-slate-400">
-            Frontend veri modeli (Student, QuizAttempt, EngineeringExercise, ScenarioAttempt) planlanan Java Spring Boot REST API ve JPA Entity şemasına birebir uyumludur.
+            {t('progress.backendNoticeDesc')}
           </p>
         </div>
       </div>

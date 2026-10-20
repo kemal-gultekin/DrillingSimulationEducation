@@ -2,10 +2,17 @@ import React, { useRef, useEffect, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
 import * as THREE from 'three';
-import { CameraViewMode, NearbyEquipmentInfo, WalkPerspective } from '../types';
+import { 
+  CameraViewMode, 
+  NearbyEquipmentInfo, 
+  WalkPerspective, 
+  ViewDisplayMode, 
+  DownholeOperationPhase 
+} from '../types';
 import { Rig } from './Rig';
 import { FirstPersonController } from './navigation/FirstPersonController';
 import { SceneEffects, SCENE_LIGHTING_CONFIG } from './SceneEffects';
+import { SubsurfaceView } from './subsurface/SubsurfaceView';
 
 // Subtle daytime atmospheric sky dome creating a natural zenith-to-horizon daylight gradient
 function SkyAtmosphere() {
@@ -62,37 +69,66 @@ interface SceneProps {
   onInspectNearby?: () => void;
   onCloseInspect?: () => void;
   isInteracting?: boolean;
+  // Stage 4B additions:
+  hoveredEquipmentId?: string | null;
+  onHoverEquipment?: (id: string | null, clientX?: number, clientY?: number) => void;
+  onDoubleClickEquipment?: (id: string) => void;
+  isSubsurfaceMode?: boolean;
+  displayMode?: ViewDisplayMode;
+  hiddenEquipmentIds?: string[];
+  subsurfaceData?: {
+    currentBitDepth: number;
+    isDrilling: boolean;
+    phase: DownholeOperationPhase;
+    kickActive: boolean;
+    isBopClosed: boolean;
+  };
 }
 
-// Camera animation controller that smoothly interpolates camera position & orbit target only during transitions
+// Camera animation controller with 700 ms smooth cubic easing and drag cancellation
 function CameraController({
   targetPos,
-  targetLookAt
+  targetLookAt,
+  isSubsurfaceMode = false
 }: {
   targetPos: [number, number, number];
   targetLookAt: [number, number, number];
+  isSubsurfaceMode?: boolean;
 }) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
 
-  const desiredPos = useRef(new THREE.Vector3(...targetPos));
-  const desiredTarget = useRef(new THREE.Vector3(...targetLookAt));
+  const startPos = useRef(new THREE.Vector3());
+  const startTarget = useRef(new THREE.Vector3());
+  const endPos = useRef(new THREE.Vector3(...targetPos));
+  const endTarget = useRef(new THREE.Vector3(...targetLookAt));
+
+  const startTime = useRef<number>(0);
+  const duration = useRef<number>(750); // 750 ms smooth easing flight
   const isTransitioning = useRef<boolean>(false);
 
-  // When target changes via props, initiate smooth transition
+  // When target changes, start smooth eased transition
   useEffect(() => {
-    desiredPos.current.set(...targetPos);
-    desiredTarget.current.set(...targetLookAt);
+    if (controlsRef.current) {
+      startPos.current.copy(camera.position);
+      startTarget.current.copy(controlsRef.current.target);
+    } else {
+      startPos.current.set(...targetPos);
+      startTarget.current.set(...targetLookAt);
+    }
+    endPos.current.set(...targetPos);
+    endTarget.current.set(...targetLookAt);
+
+    startTime.current = performance.now();
     isTransitioning.current = true;
   }, [targetPos[0], targetPos[1], targetPos[2], targetLookAt[0], targetLookAt[1], targetLookAt[2]]);
 
-  // Listen to user interaction on controls to cancel automated lerp immediately
+  // User manual drag/orbit cancels animation instantly
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls) return;
 
     const handleUserStart = () => {
-      // User started manual dragging/orbiting/panning: stop fighting with programmatic lerp
       isTransitioning.current = false;
     };
 
@@ -104,25 +140,24 @@ function CameraController({
 
   useFrame(() => {
     if (isTransitioning.current) {
-      // Smoothly interpolate towards the selected target
-      camera.position.lerp(desiredPos.current, 0.08);
+      const now = performance.now();
+      const elapsed = now - startTime.current;
+      const progress = Math.min(1.0, Math.max(0, elapsed / duration.current));
+
+      // Cubic Ease-Out curve: 1 - (1 - t)^3
+      const ease = 1 - Math.pow(1 - progress, 3);
+
+      camera.position.lerpVectors(startPos.current, endPos.current, ease);
 
       if (controlsRef.current) {
-        controlsRef.current.target.lerp(desiredTarget.current, 0.08);
+        controlsRef.current.target.lerpVectors(startTarget.current, endTarget.current, ease);
       }
 
-      // Check if close enough to finish programmatic transition
-      const posDist = camera.position.distanceTo(desiredPos.current);
-      const targetDist = controlsRef.current
-        ? controlsRef.current.target.distanceTo(desiredTarget.current)
-        : 0;
-
-      if (posDist < 0.04 && targetDist < 0.04) {
+      if (progress >= 1.0) {
         isTransitioning.current = false;
       }
     }
 
-    // Always update controls for smooth damping
     if (controlsRef.current) {
       controlsRef.current.update();
     }
@@ -133,13 +168,13 @@ function CameraController({
       ref={controlsRef}
       makeDefault
       enableDamping={true}
-      dampingFactor={0.05}
+      dampingFactor={0.06}
       rotateSpeed={0.8}
       zoomSpeed={1.0}
       panSpeed={0.8}
-      maxPolarAngle={Math.PI / 2 - 0.02} // Do not dip below ground
-      minDistance={2.5}
-      maxDistance={120}
+      maxPolarAngle={isSubsurfaceMode ? Math.PI * 0.98 : Math.PI / 2 - 0.02}
+      minDistance={isSubsurfaceMode ? 1.5 : 2.5}
+      maxDistance={isSubsurfaceMode ? 260 : 120}
     />
   );
 }
@@ -158,7 +193,14 @@ export const Scene: React.FC<SceneProps> = ({
   onNearbyEquipmentChange,
   onInspectNearby,
   onCloseInspect,
-  isInteracting = false
+  isInteracting = false,
+  hoveredEquipmentId = null,
+  onHoverEquipment,
+  onDoubleClickEquipment,
+  isSubsurfaceMode = false,
+  displayMode = 'normal',
+  hiddenEquipmentIds = [],
+  subsurfaceData
 }) => {
   // In Walk mode, clicking on 3D objects in the scene should NEVER trigger camera focus or selection
   const handleSceneSelectEquipment = (id: string) => {
@@ -169,7 +211,16 @@ export const Scene: React.FC<SceneProps> = ({
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-slate-900">
+    <div
+      className="w-full h-full relative overflow-hidden bg-slate-900"
+      onPointerDown={() => {
+        // Hide hover tooltip if user is dragging/interacting
+        onHoverEquipment?.(null);
+      }}
+      onPointerLeave={() => {
+        onHoverEquipment?.(null);
+      }}
+    >
       <Canvas
         shadows
         camera={{
@@ -186,10 +237,10 @@ export const Scene: React.FC<SceneProps> = ({
           toneMappingExposure: SCENE_LIGHTING_CONFIG.exposure
         }}
       >
-        {/* Crisp daytime atmospheric sky background, sky dome gradient, and distant horizon fog */}
+        {/* Daytime sky background, sky dome gradient, and distant horizon fog */}
         <color attach="background" args={['#90bbd7']} />
         <SkyAtmosphere />
-        <fog attach="fog" args={['#90bbd7', 85, 250]} />
+        <fog attach="fog" args={['#90bbd7', isSubsurfaceMode ? 140 : 85, 260]} />
 
         {/* Modular Lighting System & Post-Processing Pipeline */}
         <SceneEffects />
@@ -214,7 +265,25 @@ export const Scene: React.FC<SceneProps> = ({
           onSelectEquipment={handleSceneSelectEquipment}
           isPumping={isPumping}
           cameraViewMode={cameraViewMode}
+          hoveredEquipmentId={hoveredEquipmentId}
+          onHoverEquipment={onHoverEquipment}
+          onDoubleClickEquipment={onDoubleClickEquipment}
+          displayMode={displayMode}
+          hiddenEquipmentIds={hiddenEquipmentIds}
+          isSubsurfaceMode={isSubsurfaceMode}
         />
+
+        {/* 3D Subsurface Geological & Downhole Model (rendered when Subsurface view is active) */}
+        {isSubsurfaceMode && subsurfaceData && (
+          <SubsurfaceView
+            currentBitDepth={subsurfaceData.currentBitDepth}
+            isDrilling={subsurfaceData.isDrilling}
+            phase={subsurfaceData.phase}
+            kickActive={subsurfaceData.kickActive}
+            isBopClosed={subsurfaceData.isBopClosed}
+            mudPumping={isPumping}
+          />
+        )}
 
         {/* Camera Navigation Mode Selection: First-Person Walk vs. Orbit Inspection */}
         {cameraViewMode === 'walk' ? (
@@ -229,7 +298,11 @@ export const Scene: React.FC<SceneProps> = ({
             isInteracting={isInteracting}
           />
         ) : (
-          <CameraController targetPos={cameraPosition} targetLookAt={cameraTarget} />
+          <CameraController
+            targetPos={cameraPosition}
+            targetLookAt={cameraTarget}
+            isSubsurfaceMode={isSubsurfaceMode}
+          />
         )}
       </Canvas>
     </div>

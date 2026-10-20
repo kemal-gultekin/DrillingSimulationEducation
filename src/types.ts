@@ -1,19 +1,43 @@
+import { LocalizedString, OptionalLocalizedString } from './i18n/types';
+
+export type UserRole = 'student' | 'instructor';
+
+export interface UserProfile {
+  id: string;
+  fullName: string;
+  role: UserRole;
+  studentNumber?: string;
+  title?: string;
+  email?: string;
+  username?: string;
+  classCode?: string;
+  createdAt?: string;
+}
+
 export type AppMode = 
-  | 'explore'      // Keşfet
-  | 'safety'       // Güvenlik
-  | 'engineering'  // Mühendislik
-  | 'scenarios'    // Sondaj Senaryoları
-  | 'wellcontrol'  // Kuyu Kontrolü
-  | 'progress'     // İlerleme & Performans
-  | 'instructor';  // Eğitmen Paneli
+  | 'explore'                // Keşfet
+  | 'safety'                 // Güvenlik
+  | 'engineering'            // Mühendislik
+  | 'scenarios'              // Sondaj Senaryoları
+  | 'quizzes'                // Quizler
+  | 'my-assignments'         // Ödevlerim (Öğrenci)
+  | 'my-grades'              // Notlarım (Öğrenci)
+  | 'wellcontrol'            // Kuyu Kontrolü
+  | 'progress'               // İlerleme & Performans
+  | 'instructor'             // Eğitmen Paneli (Genel)
+  | 'instructor-dashboard'   // Panel (Sınıf İlerlemesi)
+  | 'instructor-quizzes'     // Quiz Yönetimi
+  | 'instructor-assignments' // Ödev Yönetimi
+  | 'instructor-grading'     // Teslimler ve Notlandırma
+  | 'instructor-students';   // Öğrenci Listesi
 
 export type CameraViewMode = 'orbit' | 'walk';
 export type WalkPerspective = 'first-person' | 'third-person';
 
 export interface NearbyEquipmentInfo {
   id: string;
-  name: string;
-  turkishName: string;
+  name: LocalizedString | string;
+  turkishName?: string;
   distance: number;
 }
 
@@ -28,51 +52,70 @@ export type EquipmentCategory =
 
 export interface EquipmentItem {
   id: string;
-  name: string;
-  turkishName: string;
+  name: LocalizedString | string;
+  turkishName?: string;
   category: EquipmentCategory;
   position: [number, number, number];
   cameraTarget: [number, number, number];
   cameraPosition: [number, number, number];
-  description: string;
-  technicalSpecs: { [key: string]: string };
-  workingPrinciple: string;
-  drillingRole: string;
-  safetyHazards: string[];
-  maintenanceChecks: string[];
-  systemConnection: string;
+  description: LocalizedString | string;
+  shortDescription?: LocalizedString | string;
+  referenceStandard?: string;
+  referenceBook?: string;
+  technicalSpecs: { tr?: Record<string, string>; en?: Record<string, string> } | Record<string, string>;
+  workingPrinciple: LocalizedString | string;
+  drillingRole: LocalizedString | string;
+  safetyHazards: { tr: string[]; en: string[] } | string[];
+  maintenanceChecks: { tr: string[]; en: string[] } | string[];
+  systemConnection: LocalizedString | string;
+}
+
+export type ViewDisplayMode = 'normal' | 'isolate' | 'fade' | 'hide' | 'internals';
+export type DownholeOperationPhase = 'drilling' | 'tripping' | 'casing' | 'wellcontrol';
+
+export interface FormationLayer {
+  id: string;
+  name: LocalizedString;
+  depthStart: number; // ft
+  depthEnd: number;   // ft
+  color: string;
+  textColor?: string;
+  textureType: 'soil' | 'sandstone' | 'shale' | 'limestone' | 'reservoir' | 'basement';
+  description: LocalizedString;
+  porePressureGradient: number; // psi/ft
+  rockHardness: number;         // 1 to 10
 }
 
 export interface SafetyQuestion {
   id: string;
   category: 'ppe' | 'h2s' | 'fire' | 'emergency' | 'heights' | 'loto' | 'confined' | 'chemicals' | 'rigfloor' | 'environmental';
-  title: string;
-  question: string;
-  options: string[];
+  title: LocalizedString | string;
+  question: LocalizedString | string;
+  options: { tr: string[]; en: string[] } | string[];
   correctIndex: number;
-  explanation: string;
+  explanation: LocalizedString | string;
   equipmentFocusId?: string;
-  difficulty: 'Temel' | 'Orta' | 'İleri';
+  difficulty: 'Temel' | 'Orta' | 'İleri' | 'Basic' | 'Intermediate' | 'Advanced';
   regulationRef?: string;
 }
 
 export interface CalculationField {
-  label: string;
+  label: LocalizedString | string;
   variable: string;
   value: number;
   unit: string;
   min: number;
   max: number;
   step: number;
-  description: string;
+  description: LocalizedString | string;
 }
 
 export interface CalculationModule {
   id: string;
-  title: string;
-  turkishTitle: string;
+  title: LocalizedString | string;
+  turkishTitle?: string;
   formula: string;
-  description: string;
+  description: LocalizedString | string;
   fields: CalculationField[];
   calculate: (inputs: Record<string, number>) => {
     result: number;
@@ -86,10 +129,10 @@ export interface CalculationModule {
 
 export interface ScenarioChoice {
   id: string;
-  text: string;
+  text: LocalizedString | string;
   outcomeType: 'safe' | 'warning' | 'critical';
-  consequence: string;
-  explanation: string;
+  consequence: LocalizedString | string;
+  explanation: LocalizedString | string;
   telemetryChange?: {
     standpipePressure?: number;
     pitVolume?: number;
@@ -104,7 +147,7 @@ export interface ScenarioChoice {
 
 export interface ScenarioStep {
   id: string;
-  situation: string;
+  situation: LocalizedString | string;
   observedData: {
     standpipePressure: number; // psi
     pitVolume: number;         // bbl
@@ -112,24 +155,24 @@ export interface ScenarioStep {
     rop: number;               // ft/hr
     hookLoad: number;          // klbs
     mudWeight: number;         // ppg
-    statusAlert: string;
+    statusAlert: LocalizedString | string;
   };
   choices: ScenarioChoice[];
 }
 
 export interface DrillingScenario {
   id: string;
-  title: string;
-  turkishTitle: string;
-  difficulty: 'Başlangıç' | 'Orta' | 'Zor';
-  summary: string;
+  title: LocalizedString | string;
+  turkishTitle?: string;
+  difficulty: 'Başlangıç' | 'Orta' | 'Zor' | 'Beginner' | 'Intermediate' | 'Advanced';
+  summary: LocalizedString | string;
   initialConditions: {
     depth: number;       // ft
     tvd: number;         // ft
     holeSize: number;    // in
     drillCollarLength: number;
     mudWeight: number;   // ppg
-    formation: string;
+    formation: LocalizedString | string;
   };
   equipmentIdFocus?: string;
   initialStepId: string;
@@ -161,11 +204,11 @@ export interface StudentProgressState {
 export interface GuidedMission {
   id: string;
   stepNumber: number;
-  title: string;
-  turkishTitle: string;
+  title: LocalizedString | string;
+  turkishTitle?: string;
   targetEquipmentId: string;
-  instruction: string;
-  turkishInstruction: string;
-  hint: string;
-  turkishHint: string;
+  instruction: LocalizedString | string;
+  turkishInstruction?: string;
+  hint: LocalizedString | string;
+  turkishHint?: string;
 }

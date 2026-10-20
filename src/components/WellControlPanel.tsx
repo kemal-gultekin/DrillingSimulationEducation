@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { calculateKillSheet, WELL_CONTROL_CONCEPTS } from '../data/wellControl';
+import { useI18n } from '../i18n';
 import { 
   ShieldCheck, 
   Layers, 
-  HelpCircle, 
   TrendingDown, 
   Sliders, 
   BookOpen, 
-  Flame, 
   Activity, 
   AlertTriangle 
 } from 'lucide-react';
@@ -19,6 +18,7 @@ interface WellControlPanelProps {
 export const WellControlPanel: React.FC<WellControlPanelProps> = ({
   onPracticeRecorded
 }) => {
+  const { t, resolveText, lang } = useI18n();
   const [activeTab, setActiveTab] = useState<'killsheet' | 'methods' | 'concepts'>('killsheet');
 
   // Input states for Kill Sheet calculation
@@ -49,7 +49,7 @@ export const WellControlPanel: React.FC<WellControlPanelProps> = ({
   return (
     <div
       id="well-control-panel"
-      className="absolute top-16 left-4 z-20 w-[470px] max-h-[calc(100vh-5.5rem)] bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl flex flex-col text-slate-200 overflow-y-auto"
+      className="absolute top-16 left-4 z-20 w-[470px] max-h-[calc(100vh-5.5rem)] bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl flex flex-col text-slate-200 overflow-y-auto select-none"
     >
       {/* Header */}
       <div className="p-4 border-b border-slate-800 sticky top-0 bg-slate-900/95 backdrop-blur-md z-10">
@@ -58,8 +58,8 @@ export const WellControlPanel: React.FC<WellControlPanelProps> = ({
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="font-bold text-sm text-white">Well Control (Kuyu Kontrolü) Eğitimi</h2>
-            <p className="text-[11px] text-slate-400">Kill Sheet Hesabı & Kuyu Öldürme Metotları</p>
+            <h2 className="font-bold text-sm text-white">{t('wellControl.title')}</h2>
+            <p className="text-[11px] text-slate-400">{t('wellControl.subtitle')}</p>
           </div>
         </div>
 
@@ -68,258 +68,276 @@ export const WellControlPanel: React.FC<WellControlPanelProps> = ({
           <button
             id="tab-killsheet"
             onClick={() => setActiveTab('killsheet')}
-            className={`flex-1 py-1.5 rounded-md font-semibold transition-colors ${
+            className={`flex-1 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
               activeTab === 'killsheet'
-                ? 'bg-amber-500 text-slate-950'
+                ? 'bg-amber-500 text-slate-950 font-bold'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Kill Sheet
+            {t('wellControl.tabKillSheet')}
           </button>
           <button
             id="tab-methods"
             onClick={() => setActiveTab('methods')}
-            className={`flex-1 py-1.5 rounded-md font-semibold transition-colors ${
+            className={`flex-1 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
               activeTab === 'methods'
-                ? 'bg-amber-500 text-slate-950'
+                ? 'bg-amber-500 text-slate-950 font-bold'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Kuyu Öldürme Yöntemleri
+            {t('wellControl.tabMethods')}
           </button>
           <button
             id="tab-concepts"
             onClick={() => setActiveTab('concepts')}
-            className={`flex-1 py-1.5 rounded-md font-semibold transition-colors ${
+            className={`flex-1 py-1.5 rounded-md font-semibold transition-colors cursor-pointer ${
               activeTab === 'concepts'
-                ? 'bg-amber-500 text-slate-950'
+                ? 'bg-amber-500 text-slate-950 font-bold'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Kritik Kavramlar
+            {t('wellControl.tabConcepts')}
           </button>
         </div>
       </div>
 
-      {/* Tab 1: Kill Sheet Calculator */}
-      {activeTab === 'killsheet' && (
-        <div className="p-4 space-y-4 text-xs">
-          {/* Key Calculated Highlights */}
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="bg-gradient-to-br from-amber-500/10 to-slate-950 p-3 rounded-xl border border-amber-500/40 text-center">
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Gereken Öldürme Çamuru</span>
-              <span className="text-2xl font-black text-amber-400 font-mono">{killSheet.killMudWeight}</span>
-              <span className="text-xs text-slate-300 ml-1">ppg (KMW)</span>
-              <span className="text-[10px] text-slate-500 block mt-0.5 font-mono">OMW: {omw} ppg</span>
-            </div>
-
-            <div className="bg-gradient-to-br from-sky-500/10 to-slate-950 p-3 rounded-xl border border-sky-500/40 text-center">
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Formasyon Basıncı (P_form)</span>
-              <span className="text-2xl font-black text-sky-400 font-mono">{killSheet.formationPressure}</span>
-              <span className="text-xs text-slate-300 ml-1">psi</span>
-              <span className="text-[10px] text-slate-500 block mt-0.5 font-mono">SIDPP: {sidpp} psi</span>
-            </div>
-          </div>
-
-          {/* Secondary Kill Sheet Values */}
-          <div className="grid grid-cols-3 gap-2 text-center font-mono">
-            <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-              <span className="text-[10px] text-slate-500 block font-sans">İlk Dolaşım (ICP)</span>
-              <span className="text-sm font-bold text-slate-200">{killSheet.icp}</span>
-              <span className="text-[10px] text-slate-500 ml-1">psi</span>
-            </div>
-            <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-              <span className="text-[10px] text-slate-500 block font-sans">Son Dolaşım (FCP)</span>
-              <span className="text-sm font-bold text-slate-200">{killSheet.fcp}</span>
-              <span className="text-[10px] text-slate-500 ml-1">psi</span>
-            </div>
-            <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-              <span className="text-[10px] text-slate-500 block font-sans">MAASP Sınırı</span>
-              <span className="text-sm font-bold text-amber-400">{killSheet.maasp}</span>
-              <span className="text-[10px] text-slate-500 ml-1">psi</span>
-            </div>
-          </div>
-
-          {/* Influx Fluid Diagnostics */}
-          <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl space-y-1.5">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-semibold text-slate-300">Teşhis Edilen Akışkan Tipi:</span>
-              <span className="font-mono text-amber-400 font-bold">
-                {killSheet.influxDensity} ppg ({killSheet.influxHeight} ft)
-              </span>
-            </div>
-            <div className="p-2 rounded bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
-              {killSheet.influxType}
-            </div>
-          </div>
-
-          {/* Sliders / Inputs */}
-          <div className="bg-slate-950/40 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
-            <div className="text-slate-300 font-semibold text-xs border-b border-slate-800 pb-1 flex items-center justify-between">
-              <span>Saha ve Kuyu Verileri</span>
-              <span className="text-[10px] text-slate-500 font-normal">Değerleri değiştirerek hesaplayın</span>
-            </div>
-
-            {/* TVD */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-slate-400">Kuyu TVD (ft):</span>
-                <span className="font-mono font-bold text-white">{tvd} ft</span>
+      {/* Content */}
+      <div className="p-4 space-y-4 text-xs">
+        {activeTab === 'killsheet' && (
+          <>
+            {/* Input Controls */}
+            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-3">
+              <div className="flex items-center gap-1.5 font-bold text-slate-300 text-xs mb-1">
+                <Sliders className="w-3.5 h-3.5 text-amber-400" />
+                <span>{t('wellControl.dataInputs')}</span>
               </div>
-              <input
-                type="range"
-                min={3000}
-                max={20000}
-                step={100}
-                value={tvd}
-                onChange={(e) => {
-                  setTvd(Number(e.target.value));
-                  handleInputChange();
-                }}
-                className="w-full accent-amber-500 cursor-pointer h-1 bg-slate-800 rounded"
-              />
-            </div>
 
-            {/* OMW */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-slate-400">Mevcut Çamur (OMW):</span>
-                <span className="font-mono font-bold text-amber-400">{omw} ppg</span>
-              </div>
-              <input
-                type="range"
-                min={8.5}
-                max={16.0}
-                step={0.1}
-                value={omw}
-                onChange={(e) => {
-                  setOmw(Number(e.target.value));
-                  handleInputChange();
-                }}
-                className="w-full accent-amber-500 cursor-pointer h-1 bg-slate-800 rounded"
-              />
-            </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1 bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-300">{t('wellControl.tvdLabel')}</span>
+                    <span className="font-mono text-amber-400 font-bold">{tvd} ft</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={3000}
+                    max={20000}
+                    step={100}
+                    value={tvd}
+                    onChange={(e) => {
+                      setTvd(parseFloat(e.target.value));
+                      handleInputChange();
+                    }}
+                    className="w-full accent-amber-500 cursor-pointer"
+                  />
+                </div>
 
-            {/* SIDPP */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-slate-400">Kapalı Boru Basıncı (SIDPP):</span>
-                <span className="font-mono font-bold text-sky-400">{sidpp} psi</span>
-              </div>
-              <input
-                type="range"
-                min={50}
-                max={1500}
-                step={10}
-                value={sidpp}
-                onChange={(e) => {
-                  setSidpp(Number(e.target.value));
-                  handleInputChange();
-                }}
-                className="w-full accent-amber-500 cursor-pointer h-1 bg-slate-800 rounded"
-              />
-            </div>
+                <div className="space-y-1 bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-300">{t('wellControl.omwLabel')}</span>
+                    <span className="font-mono text-amber-400 font-bold">{omw} ppg</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={8.33}
+                    max={18.0}
+                    step={0.1}
+                    value={omw}
+                    onChange={(e) => {
+                      setOmw(parseFloat(e.target.value));
+                      handleInputChange();
+                    }}
+                    className="w-full accent-amber-500 cursor-pointer"
+                  />
+                </div>
 
-            {/* SICP */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-slate-400">Kapalı Anülüs Basıncı (SICP):</span>
-                <span className="font-mono font-bold text-red-400">{sicp} psi</span>
-              </div>
-              <input
-                type="range"
-                min={100}
-                max={2500}
-                step={10}
-                value={sicp}
-                onChange={(e) => {
-                  setSicp(Number(e.target.value));
-                  handleInputChange();
-                }}
-                className="w-full accent-amber-500 cursor-pointer h-1 bg-slate-800 rounded"
-              />
-            </div>
+                <div className="space-y-1 bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-300">{t('wellControl.sidppLabel')}</span>
+                    <span className="font-mono text-amber-400 font-bold">{sidpp} psi</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={50}
+                    max={2000}
+                    step={10}
+                    value={sidpp}
+                    onChange={(e) => {
+                      setSidpp(parseFloat(e.target.value));
+                      handleInputChange();
+                    }}
+                    className="w-full accent-amber-500 cursor-pointer"
+                  />
+                </div>
 
-            {/* Slow Circulating Rate Pressure */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-slate-400">Düşük Debi Pompa Basıncı (SCR @ 30 SPM):</span>
-                <span className="font-mono font-bold text-slate-200">{scrPressure} psi</span>
-              </div>
-              <input
-                type="range"
-                min={300}
-                max={1500}
-                step={25}
-                value={scrPressure}
-                onChange={(e) => {
-                  setScrPressure(Number(e.target.value));
-                  handleInputChange();
-                }}
-                className="w-full accent-amber-500 cursor-pointer h-1 bg-slate-800 rounded"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+                <div className="space-y-1 bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-300">{t('wellControl.sicpLabel')}</span>
+                    <span className="font-mono text-amber-400 font-bold">{sicp} psi</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={sidpp + 20}
+                    max={3000}
+                    step={10}
+                    value={sicp}
+                    onChange={(e) => {
+                      setSicp(parseFloat(e.target.value));
+                      handleInputChange();
+                    }}
+                    className="w-full accent-amber-500 cursor-pointer"
+                  />
+                </div>
 
-      {/* Tab 2: Methods Comparison */}
-      {activeTab === 'methods' && (
-        <div className="p-4 space-y-4 text-xs">
-          {/* Drillers Method */}
-          <div className="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800 space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-sm text-amber-300">1. Driller's Method (Sondör Yöntemi)</h3>
-              <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">2 Tur Dolaşım</span>
-            </div>
-            <p className="text-slate-300 text-[11px] leading-relaxed">
-              En yaygın kullanılan yöntemdir çünkü barit ağırlıklı çamurun tankta hazırlanmasını beklemeden derhal dolaşıma başlanabilir.
-            </p>
-            <div className="space-y-1 text-[11px] text-slate-300">
-              <div className="p-2 bg-slate-900 rounded border border-slate-800">
-                <span className="font-bold text-amber-400 block mb-0.5">1. Dolaşım Turu (Influx Out):</span>
-                Orijinal çamurla (OMW) gaz/petrol anülüsten dışarı atılır. Drill pipe basıncı ICP sabit tutularak choke üzerinden gaz tahliye edilir.
-              </div>
-              <div className="p-2 bg-slate-900 rounded border border-slate-800">
-                <span className="font-bold text-emerald-400 block mb-0.5">2. Dolaşım Turu (KMW In):</span>
-                Hazırlanan Kill Mud Weight (KMW) kuyuya pompalanır. Çamur matkaba ulaşınca basınç FCP'ye düşer, anülüsten yüzeye dönünce kuyu öldürülür.
+                <div className="space-y-1 bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-300">{t('wellControl.pitGainLabel')}</span>
+                    <span className="font-mono text-amber-400 font-bold">{pitGain} bbl</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={5}
+                    max={80}
+                    step={1}
+                    value={pitGain}
+                    onChange={(e) => {
+                      setPitGain(parseFloat(e.target.value));
+                      handleInputChange();
+                    }}
+                    className="w-full accent-amber-500 cursor-pointer"
+                  />
+                </div>
+
+                <div className="space-y-1 bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-300">{t('wellControl.scrLabel')}</span>
+                    <span className="font-mono text-amber-400 font-bold">{scrPressure} psi</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={200}
+                    max={1500}
+                    step={25}
+                    value={scrPressure}
+                    onChange={(e) => {
+                      setScrPressure(parseFloat(e.target.value));
+                      handleInputChange();
+                    }}
+                    className="w-full accent-amber-500 cursor-pointer"
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Wait & Weight Method */}
-          <div className="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800 space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-sm text-sky-300">2. Wait & Weight (Mühendis Yöntemi)</h3>
-              <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">1 Tur Dolaşım</span>
-            </div>
-            <p className="text-slate-300 text-[11px] leading-relaxed">
-              Kuyu kapatıldıktan sonra çamur tanklarında barit ile gereken Kill Mud Weight (KMW) hazırlanana kadar beklenir.
-            </p>
-            <div className="p-2 bg-slate-900 rounded border border-slate-800 text-[11px] text-slate-300">
-              <span className="font-bold text-sky-400 block mb-0.5">Avantajı (Düşük Yüzey Basıncı):</span>
-              Ağır çamur anülüste yükselirken hidrostatik sütun hemen güçlenir; bu sayede muhafaza borusu pabucuna (Casing Shoe) ve yüzey choke manifolduna binen maksimum basınç Driller yöntemine göre çok daha düşüktür.
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tab 3: Key Concepts */}
-      {activeTab === 'concepts' && (
-        <div className="p-4 space-y-3 text-xs">
-          {WELL_CONTROL_CONCEPTS.map((concept, idx) => (
-            <div key={idx} className="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
-              <div className="flex items-center gap-2 text-amber-300 font-bold text-xs">
-                <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                <span>{concept.title}</span>
+            {/* Core Kill Sheet Results Grid */}
+            <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-slate-200">{t('wellControl.resultsTitle')}</span>
+                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/40">
+                  IWCF / IADC
+                </span>
               </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                  <span className="text-[10px] text-slate-400 block font-sans">{t('wellControl.formationPressure')}</span>
+                  <span className="text-base font-bold text-sky-400">{killSheet.formationPressure}</span>
+                  <span className="text-[10px] text-slate-500 ml-1">psi</span>
+                </div>
+                <div className="bg-slate-900 p-2.5 rounded-lg border border-amber-500/40 text-center bg-amber-500/5">
+                  <span className="text-[10px] text-amber-300 block font-sans font-bold">{t('wellControl.killMudWeight')}</span>
+                  <span className="text-base font-bold text-amber-400">{killSheet.killMudWeight}</span>
+                  <span className="text-[10px] text-slate-500 ml-1">ppg</span>
+                </div>
+                <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                  <span className="text-[10px] text-slate-400 block font-sans">{t('wellControl.icp')}</span>
+                  <span className="text-base font-bold text-emerald-400">{killSheet.icp}</span>
+                  <span className="text-[10px] text-slate-500 ml-1">psi</span>
+                </div>
+                <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                  <span className="text-[10px] text-slate-400 block font-sans">{t('wellControl.fcp')}</span>
+                  <span className="text-base font-bold text-purple-400">{killSheet.fcp}</span>
+                  <span className="text-[10px] text-slate-500 ml-1">psi</span>
+                </div>
+                <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                  <span className="text-[10px] text-slate-400 block font-sans">{t('wellControl.maasp')}</span>
+                  <span className="text-base font-bold text-rose-400">{killSheet.maasp}</span>
+                  <span className="text-[10px] text-slate-500 ml-1">psi</span>
+                </div>
+                <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                  <span className="text-[10px] text-slate-400 block font-sans">{t('wellControl.kickTolerance')}</span>
+                  <span className="text-base font-bold text-teal-400">+{killSheet.kickTolerance}</span>
+                  <span className="text-[10px] text-slate-500 ml-1">ppg</span>
+                </div>
+              </div>
+
+              {/* Influx Analysis Card */}
+              <div className="p-3 bg-slate-900/90 rounded-lg border border-slate-800 space-y-1">
+                <div className="flex justify-between text-[11px] border-b border-slate-800 pb-1">
+                  <span className="text-slate-400 font-sans">{t('wellControl.influxHeight')}</span>
+                  <span className="font-mono text-slate-200">{killSheet.influxHeight} ft</span>
+                </div>
+                <div className="flex justify-between text-[11px] border-b border-slate-800 pb-1">
+                  <span className="text-slate-400 font-sans">{t('wellControl.influxDensity')}</span>
+                  <span className="font-mono text-slate-200">{killSheet.influxDensity} ppg</span>
+                </div>
+                <div className="pt-1 text-[11px]">
+                  <span className="text-slate-400 block font-sans">{t('wellControl.influxType')}</span>
+                  <span className="font-bold text-amber-300 block">{killSheet.influxType}</span>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'methods' && (
+          <div className="space-y-3">
+            <div className="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800 space-y-2">
+              <h3 className="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-amber-400" />
+                <span>1. Driller's Method (Sondör Yöntemi)</span>
+              </h3>
               <p className="text-slate-300 leading-relaxed text-[11px]">
-                {concept.content}
+                {lang === 'tr'
+                  ? 'İki tam dolaşım turu gerektirir. 1. Turda kuyu kapatıldıktan sonra orijinal çamurla (OMW) gaz kuyu anülüsünden tahliye edilir (ICP basıncı sabit tutulur). Gaz atıldıktan sonra 2. Turda tankta hazırlanan ağır öldürme çamuru (KMW) basılır.'
+                  : 'Requires two full circulations. Circulation 1 removes the kick from the annulus using original mud weight (OMW) while holding drill pipe pressure at ICP. Circulation 2 pumps the kill mud weight (KMW) into the well.'}
               </p>
+              <div className="p-2 bg-slate-900 rounded border border-slate-800 font-mono text-[10px] text-slate-400">
+                1. Dolaşım: Pompala OMW | Basınç = ICP &rarr; 2. Dolaşım: Pompala KMW | Basınç = FCP
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+
+            <div className="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800 space-y-2">
+              <h3 className="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-emerald-400" />
+                <span>2. Wait and Weight Method (Mühendis Yöntemi)</span>
+              </h3>
+              <p className="text-slate-300 leading-relaxed text-[11px]">
+                {lang === 'tr'
+                  ? 'Tek tam dolaşım turu gerektirir. Kuyu kapatıldıktan sonra çamur tanklarında derhal KMW ağırlıklı çamur hazırlanana kadar beklenir. Tek seferde gaz tahliye edilirken arkasından öldürme çamuru basılır. Muhafaza pabucundaki tepe basıncı daha düşüktür.'
+                  : 'Executes kill in a single circulation. The well remains shut in while mud is weighted to KMW. Pumping KMW displaces the influx simultaneously, minimizing peak shoe pressures.'}
+              </p>
+              <div className="p-2 bg-slate-900 rounded border border-slate-800 font-mono text-[10px] text-slate-400">
+                Tek Dolaşım: ICP &rarr; FCP Basınç Düşüş Programı (Strokes / Pressure Chart)
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'concepts' && (
+          <div className="space-y-3">
+            {WELL_CONTROL_CONCEPTS.map((c, i) => (
+              <div key={i} className="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800 space-y-1.5">
+                <h3 className="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-sky-400" />
+                  <span>{resolveText(c.title)}</span>
+                </h3>
+                <p className="text-slate-300 leading-relaxed text-[11px]">{resolveText(c.content)}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

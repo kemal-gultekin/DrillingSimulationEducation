@@ -1,5 +1,6 @@
 import React from 'react';
 import { EquipmentItem } from '../types';
+import { useI18n } from '../i18n';
 import { 
   X, 
   Wrench, 
@@ -9,7 +10,8 @@ import {
   Compass, 
   ShieldAlert, 
   Eye, 
-  Link2 
+  Link2,
+  BookOpen
 } from 'lucide-react';
 
 interface InfoCardProps {
@@ -25,31 +27,41 @@ export const InfoCard: React.FC<InfoCardProps> = ({
   onFocusCamera,
   onJumpToSafety
 }) => {
+  const { t, resolveText, resolveArray, resolveDict, lang } = useI18n();
+
   const getCategoryBadge = (cat: string) => {
     switch (cat) {
       case 'hoisting':
-        return { label: 'Kaldırma Sistemi (Hoisting)', color: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
+        return { label: t('equipment.categoryHoisting'), color: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
       case 'rotating':
-        return { label: 'Döndürme Sistemi (Rotating)', color: 'bg-sky-500/20 text-sky-300 border-sky-500/40' };
+        return { label: t('equipment.categoryRotating'), color: 'bg-sky-500/20 text-sky-300 border-sky-500/40' };
       case 'circulating':
-        return { label: 'Sirkülasyon Sistemi (Circulating)', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
+        return { label: t('equipment.categoryCirculating'), color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
       case 'wellcontrol':
-        return { label: 'Kuyu Kontrolü (Well Control)', color: 'bg-red-500/20 text-red-300 border-red-500/40' };
+        return { label: t('equipment.categoryWellcontrol'), color: 'bg-red-500/20 text-red-300 border-red-500/40' };
       case 'power':
-        return { label: 'Güç Sistemi (Power)', color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' };
+        return { label: t('equipment.categoryPower'), color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40' };
       case 'monitoring':
-        return { label: 'İzleme & Kayıt (Monitoring)', color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' };
+        return { label: t('equipment.categoryMonitoring'), color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' };
       default:
-        return { label: 'Yüzey Tesisi (Surface)', color: 'bg-slate-500/20 text-slate-300 border-slate-500/40' };
+        return { label: t('equipment.categorySurface'), color: 'bg-slate-500/20 text-slate-300 border-slate-500/40' };
     }
   };
 
   const badge = getCategoryBadge(equipment.category);
+  const title = resolveText(equipment.name, equipment.turkishName || '');
+  const description = resolveText(equipment.description);
+  const workingPrinciple = resolveText(equipment.workingPrinciple);
+  const drillingRole = resolveText(equipment.drillingRole);
+  const systemConnection = resolveText(equipment.systemConnection);
+  const technicalSpecs = resolveDict(equipment.technicalSpecs);
+  const safetyHazards = resolveArray(equipment.safetyHazards);
+  const maintenanceChecks = resolveArray(equipment.maintenanceChecks);
 
   return (
     <div
       id="equipment-info-card"
-      className="absolute top-16 right-4 w-96 max-h-[calc(100vh-5.5rem)] bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-xl shadow-2xl overflow-y-auto text-slate-200 z-30 flex flex-col transition-all duration-300"
+      className="absolute top-16 right-4 w-96 max-h-[calc(100vh-5.5rem)] bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-xl shadow-2xl overflow-y-auto text-slate-200 z-30 flex flex-col transition-all duration-300 select-none"
     >
       {/* Header */}
       <div className="p-4 border-b border-slate-800 sticky top-0 bg-slate-900/95 backdrop-blur-md z-10 flex items-start justify-between">
@@ -57,14 +69,16 @@ export const InfoCard: React.FC<InfoCardProps> = ({
           <span className={`inline-block px-2.5 py-0.5 text-xs font-medium rounded-full border mb-1.5 ${badge.color}`}>
             {badge.label}
           </span>
-          <h2 className="text-lg font-bold text-white leading-tight">{equipment.turkishName}</h2>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">{equipment.name}</p>
+          <h2 className="text-lg font-bold text-white leading-tight">{title}</h2>
+          {equipment.turkishName && lang === 'en' && (
+            <p className="text-xs text-slate-400 font-mono mt-0.5">{equipment.turkishName}</p>
+          )}
         </div>
         <button
           id="close-info-card-btn"
           onClick={onClose}
-          className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
-          title="Kapat"
+          className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+          title={t('equipment.closeCard')}
         >
           <X className="w-5 h-5" />
         </button>
@@ -74,7 +88,7 @@ export const InfoCard: React.FC<InfoCardProps> = ({
       <div className="p-4 space-y-4 text-xs">
         {/* Description */}
         <p className="text-slate-300 text-sm leading-relaxed border-l-2 border-amber-500 pl-3 italic">
-          {equipment.description}
+          {description}
         </p>
 
         {/* Quick Camera Navigation Action */}
@@ -85,100 +99,116 @@ export const InfoCard: React.FC<InfoCardProps> = ({
             className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg font-medium transition-colors cursor-pointer"
           >
             <Eye className="w-4 h-4" />
-            Kamerayı Odakla
+            {t('equipment.focusCamera')}
           </button>
           {onJumpToSafety && (
             <button
               id="related-safety-btn"
               onClick={onJumpToSafety}
               className="flex items-center justify-center gap-1.5 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-medium transition-colors cursor-pointer"
-              title="İlgili İSG / Emniyet Maddesini Gör"
+              title={t('equipment.relatedSafetyQuiz')}
             >
               <ShieldAlert className="w-4 h-4 text-orange-400" />
-              İSG
+              <span>ISG</span>
             </button>
           )}
         </div>
 
         {/* Technical Specifications */}
-        <div>
-          <div className="flex items-center gap-1.5 text-slate-200 font-semibold mb-2">
-            <Wrench className="w-3.5 h-3.5 text-amber-400" />
-            <span>Teknik Özellikler & Değerler</span>
+        {Object.keys(technicalSpecs).length > 0 && (
+          <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+            <div className="flex items-center gap-1.5 font-bold text-slate-300 text-xs mb-2">
+              <Wrench className="w-3.5 h-3.5 text-amber-400" />
+              <span>{t('equipment.technicalSpecs')}</span>
+            </div>
+            <div className="space-y-1">
+              {Object.entries(technicalSpecs).map(([specKey, specVal]) => (
+                <div key={specKey} className="flex justify-between py-0.5 border-b border-slate-800/60 last:border-0">
+                  <span className="text-slate-400">{specKey}:</span>
+                  <span className="font-mono text-slate-200 font-semibold text-right">{specVal}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="bg-slate-950/60 rounded-lg border border-slate-800 divide-y divide-slate-800/80">
-            {Object.entries(equipment.technicalSpecs).map(([key, value]) => (
-              <div key={key} className="flex justify-between py-1.5 px-2.5">
-                <span className="text-slate-400">{key}:</span>
-                <span className="text-slate-200 font-mono text-right ml-2 font-medium">{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* Working Principle */}
-        <div>
-          <div className="flex items-center gap-1.5 text-slate-200 font-semibold mb-1">
-            <Layers className="w-3.5 h-3.5 text-sky-400" />
-            <span>Çalışma Prensibi</span>
+        {workingPrinciple && (
+          <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+            <div className="flex items-center gap-1.5 font-bold text-slate-300 text-xs">
+              <Compass className="w-3.5 h-3.5 text-sky-400" />
+              <span>{t('equipment.workingPrinciple')}</span>
+            </div>
+            <p className="text-slate-300 leading-relaxed">{workingPrinciple}</p>
           </div>
-          <p className="text-slate-300 leading-relaxed bg-slate-950/40 p-2.5 rounded-lg border border-slate-800">
-            {equipment.workingPrinciple}
-          </p>
-        </div>
+        )}
 
-        {/* Role in Drilling Operation */}
-        <div>
-          <div className="flex items-center gap-1.5 text-slate-200 font-semibold mb-1">
-            <Compass className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Sondaj Operasyonundaki Rolü</span>
+        {/* Drilling Role */}
+        {drillingRole && (
+          <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+            <div className="flex items-center gap-1.5 font-bold text-slate-300 text-xs">
+              <Layers className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{t('equipment.drillingRole')}</span>
+            </div>
+            <p className="text-slate-300 leading-relaxed">{drillingRole}</p>
           </div>
-          <p className="text-slate-300 leading-relaxed bg-slate-950/40 p-2.5 rounded-lg border border-slate-800">
-            {equipment.drillingRole}
-          </p>
-        </div>
+        )}
 
-        {/* System Connections */}
-        <div>
-          <div className="flex items-center gap-1.5 text-slate-200 font-semibold mb-1">
-            <Link2 className="w-3.5 h-3.5 text-yellow-400" />
-            <span>Sistem Bağlantıları</span>
+        {/* System Connection */}
+        {systemConnection && (
+          <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+            <div className="flex items-center gap-1.5 font-bold text-slate-300 text-xs">
+              <Link2 className="w-3.5 h-3.5 text-indigo-400" />
+              <span>{t('equipment.systemConnection')}</span>
+            </div>
+            <p className="text-slate-300 leading-relaxed">{systemConnection}</p>
           </div>
-          <p className="text-slate-300 leading-relaxed bg-slate-950/40 p-2.5 rounded-lg border border-slate-800 font-mono text-[11px]">
-            {equipment.systemConnection}
-          </p>
-        </div>
+        )}
 
         {/* Safety Hazards */}
-        <div>
-          <div className="flex items-center gap-1.5 text-amber-300 font-semibold mb-1.5">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-            <span>Kritik İSG Tehlikeleri</span>
+        {safetyHazards.length > 0 && (
+          <div className="space-y-1.5 bg-amber-950/20 p-3 rounded-lg border border-amber-500/30">
+            <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+              <span>{t('equipment.safetyHazards')}</span>
+            </div>
+            <ul className="space-y-1 text-slate-300 pl-4 list-disc marker:text-amber-500">
+              {safetyHazards.map((hazard, i) => (
+                <li key={i} className="leading-relaxed">{hazard}</li>
+              ))}
+            </ul>
           </div>
-          <ul className="space-y-1 bg-amber-950/20 border border-amber-900/40 p-2.5 rounded-lg">
-            {equipment.safetyHazards.map((hazard, index) => (
-              <li key={index} className="flex items-start gap-1.5 text-amber-200/90">
-                <span className="text-amber-500 font-bold">•</span>
-                <span>{hazard}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        )}
 
         {/* Maintenance Checks */}
-        <div>
-          <div className="flex items-center gap-1.5 text-slate-200 font-semibold mb-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Rutin Bakım ve Kontroller</span>
+        {maintenanceChecks.length > 0 && (
+          <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+            <div className="flex items-center gap-1.5 font-bold text-slate-300 text-xs">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{t('equipment.maintenanceChecks')}</span>
+            </div>
+            <ul className="space-y-1 text-slate-300 pl-4 list-disc marker:text-emerald-500">
+              {maintenanceChecks.map((check, i) => (
+                <li key={i} className="leading-relaxed">{check}</li>
+              ))}
+            </ul>
           </div>
-          <ul className="space-y-1 bg-slate-950/40 border border-slate-800 p-2.5 rounded-lg">
-            {equipment.maintenanceChecks.map((check, index) => (
-              <li key={index} className="flex items-start gap-1.5 text-slate-300">
-                <span className="text-emerald-400">✓</span>
-                <span>{check}</span>
-              </li>
-            ))}
-          </ul>
+        )}
+
+        {/* Source Standard & Literature Reference */}
+        <div className="p-2.5 bg-slate-950/80 rounded-lg border border-slate-800 space-y-1 text-[11px]">
+          <div className="flex items-center gap-1.5 font-bold text-sky-300">
+            <BookOpen className="w-3.5 h-3.5 text-sky-400" />
+            <span>{lang === 'tr' ? 'Mühendislik Standardı & Kaynak' : 'Engineering Standard & Reference'}</span>
+          </div>
+          <div className="text-slate-300 font-mono text-[10px]">
+            {equipment.referenceStandard || 'API Spec 4F / 7K / 8C & Bourgoyne Applied Drilling Engineering'}
+          </div>
+        </div>
+
+        {/* Simplified Model Disclaimer */}
+        <div className="text-[10px] text-slate-500 font-mono text-center p-1.5 border border-dashed border-slate-800 rounded-lg bg-slate-950/40">
+          ⚠️ {lang === 'tr' ? 'Eğitim amaçlı basitleştirilmiş 3D modeldir.' : 'Simplified 3D model for educational purposes.'}
         </div>
       </div>
     </div>

@@ -9,7 +9,11 @@ import { getPBRTextures } from '../../materials/proceduralTextures';
  * the concrete BOP cellar pit under the wellhead, compacted gravel roads with tire tracks,
  * and operational soil/oil wear patches.
  */
-export const SiteGround: React.FC = () => {
+interface SiteGroundProps {
+  isSubsurfaceMode?: boolean;
+}
+
+export const SiteGround: React.FC<SiteGroundProps> = ({ isSubsurfaceMode = false }) => {
   const textures = useMemo(() => getPBRTextures(), []);
 
   // Procedural radial fade texture for expansive outer terrain (transitions soil tone to horizon sky/fog color)
@@ -151,6 +155,7 @@ export const SiteGround: React.FC = () => {
           roughnessMap={textures.dirtWear}
           alphaMap={padAlphaTexture || undefined}
           transparent={true}
+          opacity={isSubsurfaceMode ? 0.22 : 1.0}
         />
       </mesh>
 
@@ -162,6 +167,8 @@ export const SiteGround: React.FC = () => {
             map={radialGroundTexture}
             roughness={0.96}
             metalness={0.02}
+            transparent={isSubsurfaceMode}
+            opacity={isSubsurfaceMode ? 0.18 : 1.0}
           />
         </mesh>
       )}

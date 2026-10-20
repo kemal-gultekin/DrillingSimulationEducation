@@ -1,6 +1,7 @@
 import React from 'react';
 import { MousePointerClick, Eye, User, Layers } from 'lucide-react';
 import { NearbyEquipmentInfo, WalkPerspective } from '../../types';
+import { useI18n } from '../../i18n';
 
 interface WalkModeHUDProps {
   isLocked: boolean;
@@ -24,6 +25,10 @@ export const WalkModeHUD: React.FC<WalkModeHUDProps> = ({
   onTogglePerspective,
   currentDeck = 'Saha Zemini (Ground Pad)'
 }) => {
+  const { t, resolveText, lang } = useI18n();
+
+  const eqName = nearbyEquipment ? resolveText(nearbyEquipment.name, nearbyEquipment.turkishName) : '';
+
   return (
     <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-6">
       {/* Subtle Center Reticle (only in first-person mode) */}
@@ -43,9 +48,9 @@ export const WalkModeHUD: React.FC<WalkModeHUDProps> = ({
             <div className="bg-slate-950/85 backdrop-blur-md border border-amber-500/40 rounded-xl px-4 py-3 shadow-2xl flex items-center gap-3 text-amber-200 animate-pulse">
               <MousePointerClick className="w-5 h-5 text-amber-400" />
               <div className="text-left">
-                <p className="text-xs font-bold text-white">Yürüyüş Modu Aktif</p>
+                <p className="text-xs font-bold text-white">{t('hud.walkActiveTitle')}</p>
                 <p className="text-[11px] text-amber-300/90 font-mono">
-                  Ekrana tıklayarak kamerayı kilitleyin ve sahada dolaşın
+                  {t('hud.walkActiveDesc')}
                 </p>
               </div>
             </div>
@@ -63,18 +68,20 @@ export const WalkModeHUD: React.FC<WalkModeHUDProps> = ({
             <div className="text-left">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-wider">
-                  Inspect / İncele
+                  {t('hud.inspectPrompt')}
                 </span>
                 <span className="text-[10px] font-mono text-slate-400">
                   ({nearbyEquipment.distance.toFixed(1)}m)
                 </span>
               </div>
               <p className="text-xs font-bold text-white leading-tight">
-                {nearbyEquipment.name}
+                {eqName}
               </p>
-              <p className="text-[11px] text-slate-300 font-medium">
-                {nearbyEquipment.turkishName}
-              </p>
+              {nearbyEquipment.turkishName && lang === 'en' && (
+                <p className="text-[11px] text-slate-300 font-medium">
+                  {nearbyEquipment.turkishName}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -86,25 +93,25 @@ export const WalkModeHUD: React.FC<WalkModeHUDProps> = ({
           <div className="flex items-center gap-2 mr-2">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-xs font-bold text-white tracking-wide">
-              {perspective === 'first-person' ? '1P First-Person' : '3P Third-Person'}
+              {perspective === 'first-person' ? t('hud.viewFirstPerson') : t('hud.viewThirdPerson')}
             </span>
           </div>
 
           {/* Perspective Toggle Button [V] */}
           <button
             onClick={onTogglePerspective}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-amber-200 text-xs font-medium transition-all"
-            title="Kamera Bakış Açısını Değiştir (Klavye: V)"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 hover:text-amber-200 text-xs font-medium transition-all cursor-pointer"
+            title={t('hud.togglePerspective')}
           >
             {perspective === 'first-person' ? (
               <>
                 <User className="w-3.5 h-3.5 text-amber-400" />
-                <span>3P Görünüm</span>
+                <span>{t('hud.viewThirdPerson')}</span>
               </>
             ) : (
               <>
                 <Eye className="w-3.5 h-3.5 text-amber-400" />
-                <span>1P Görünüm</span>
+                <span>{t('hud.viewFirstPerson')}</span>
               </>
             )}
             <kbd className="ml-1 text-[10px] font-mono bg-slate-800 px-1 py-0.5 rounded border border-slate-700 text-slate-300">
@@ -126,7 +133,7 @@ export const WalkModeHUD: React.FC<WalkModeHUDProps> = ({
           <span className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono font-bold text-amber-300 text-[11px]">
             WASD
           </span>
-          <span className="text-slate-200">Yürü</span>
+          <span className="text-slate-200">{lang === 'tr' ? 'Yürü' : 'Walk'}</span>
         </div>
 
         <span className="text-slate-600">•</span>
@@ -135,7 +142,7 @@ export const WalkModeHUD: React.FC<WalkModeHUDProps> = ({
           <span className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono font-bold text-amber-300 text-[11px]">
             Shift
           </span>
-          <span className="text-slate-200">Sprint</span>
+          <span className="text-slate-200">{lang === 'tr' ? 'Koş' : 'Sprint'}</span>
         </div>
 
         <span className="text-slate-600">•</span>
@@ -160,7 +167,7 @@ export const WalkModeHUD: React.FC<WalkModeHUDProps> = ({
             E
           </span>
           <span className={nearbyEquipment ? 'text-amber-200 font-semibold' : 'text-slate-200'}>
-            İncele
+            {t('hud.inspectPrompt')}
           </span>
         </div>
 
@@ -170,7 +177,7 @@ export const WalkModeHUD: React.FC<WalkModeHUDProps> = ({
           <span className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono font-bold text-amber-300 text-[11px]">
             ESC
           </span>
-          <span className="text-slate-200">Fareyi Bırak</span>
+          <span className="text-slate-200">{lang === 'tr' ? 'Fareyi Bırak' : 'Unlock Cursor'}</span>
         </div>
       </div>
     </div>

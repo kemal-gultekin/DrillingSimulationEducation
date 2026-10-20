@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { CameraViewMode } from '../types';
+import { CameraViewMode, ViewDisplayMode } from '../types';
 import { EQUIPMENT_LIST } from '../data/equipment';
 import { PBR_PRESETS, getPBRTextures } from '../materials/materialLibrary';
 import { PipeRacks } from './site/PipeRacks';
@@ -20,16 +20,31 @@ interface RigProps {
   onSelectEquipment: (id: string) => void;
   isPumping?: boolean;
   cameraViewMode?: CameraViewMode;
+  hoveredEquipmentId?: string | null;
+  onHoverEquipment?: (id: string | null, clientX?: number, clientY?: number) => void;
+  onDoubleClickEquipment?: (id: string) => void;
+  displayMode?: ViewDisplayMode;
+  hiddenEquipmentIds?: string[];
+  isSubsurfaceMode?: boolean;
 }
 
 export const Rig: React.FC<RigProps> = ({
   selectedEquipmentId,
   onSelectEquipment,
   isPumping = true,
-  cameraViewMode = 'orbit'
+  cameraViewMode = 'orbit',
+  hoveredEquipmentId = null,
+  onHoverEquipment,
+  onDoubleClickEquipment,
+  displayMode = 'normal',
+  hiddenEquipmentIds = [],
+  isSubsurfaceMode = false
 }) => {
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [localHoveredId, setLocalHoveredId] = useState<string | null>(null);
   const textures = getPBRTextures();
+  const rafRef = useRef<number | null>(null);
+
+  const activeHoverId = hoveredEquipmentId || localHoveredId;
 
   // Safe selection handler that strictly disables camera focus/selection when in Walk mode
   const safeSelectEquipment = (id: string) => {
@@ -67,21 +82,58 @@ export const Rig: React.FC<RigProps> = ({
 
   const getMaterialColor = (id: string, baseColor: string, highlightColor: string = '#f59e0b') => {
     if (selectedEquipmentId === id) return '#f97316'; // Active selected orange
-    if (hoveredId === id) return highlightColor;      // Hovered yellow/amber
+    if (activeHoverId === id) return highlightColor;      // Hovered yellow/amber
+    if (displayMode === 'fade' && selectedEquipmentId && selectedEquipmentId !== id) {
+      return '#334155'; // Faded out in ghost mode
+    }
     return baseColor;
+  };
+
+  const getEmissiveProps = (id: string) => {
+    if (selectedEquipmentId === id) {
+      return { emissive: new THREE.Color('#f97316'), emissiveIntensity: 0.35 };
+    }
+    if (activeHoverId === id) {
+      return { emissive: new THREE.Color('#fbbf24'), emissiveIntensity: 0.45 };
+    }
+    return { emissive: new THREE.Color(0, 0, 0), emissiveIntensity: 0 };
+  };
+
+  const isItemVisible = (id: string) => {
+    if (hiddenEquipmentIds.includes(id)) return false;
+    if (displayMode === 'isolate' && selectedEquipmentId && selectedEquipmentId !== id) return false;
+    return true;
   };
 
   const handlePointerOver = (e: any, id: string) => {
     if (cameraViewMode === 'walk') return;
     e.stopPropagation();
-    setHoveredId(id);
+    setLocalHoveredId(id);
+    const clientX = e.clientX ?? (e.nativeEvent?.clientX ?? 0);
+    const clientY = e.clientY ?? (e.nativeEvent?.clientY ?? 0);
+    onHoverEquipment?.(id, clientX, clientY);
     document.body.style.cursor = 'pointer';
+  };
+
+  const handlePointerMove = (e: any, id: string) => {
+    if (cameraViewMode === 'walk') return;
+    e.stopPropagation();
+    const clientX = e.clientX ?? (e.nativeEvent?.clientX ?? 0);
+    const clientY = e.clientY ?? (e.nativeEvent?.clientY ?? 0);
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      setLocalHoveredId(id);
+      onHoverEquipment?.(id, clientX, clientY);
+      document.body.style.cursor = 'pointer';
+    });
   };
 
   const handlePointerOut = (e: any) => {
     if (cameraViewMode === 'walk') return;
     e.stopPropagation();
-    setHoveredId(null);
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    setLocalHoveredId(null);
+    onHoverEquipment?.(null);
     document.body.style.cursor = 'auto';
   };
 
@@ -96,6 +148,13 @@ export const Rig: React.FC<RigProps> = ({
     safeSelectEquipment(id);
   };
 
+  const handleDoubleClick = (e: any, id: string) => {
+    if (cameraViewMode === 'walk') return;
+    e.stopPropagation();
+    safeSelectEquipment(id);
+    onDoubleClickEquipment?.(id);
+  };
+
   return (
     <group>
       {/* ================= 1. RIG FOUNDATION SLAB & SUBSTRUCTURE ================= */}
@@ -108,6 +167,8 @@ export const Rig: React.FC<RigProps> = ({
           metalness={PBR_PRESETS.CONCRETE.metalness}
           bumpMap={textures.concreteNoise}
           bumpScale={0.03}
+          transparent={isSubsurfaceMode}
+          opacity={isSubsurfaceMode ? 0.3 : 1.0}
         />
       </mesh>
       {/* Concrete Pad Chamfered Curb Trim */}
@@ -212,10 +273,14 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 3. DERRICK / MAST ================= */}
       <group
+        name="derrick"
+        visible={isItemVisible('derrick')}
         position={[0, 3.5, 0]}
         onPointerOver={(e) => handlePointerOver(e, 'derrick')}
+        onPointerMove={(e) => handlePointerMove(e, 'derrick')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'derrick')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'derrick')}
       >
         {/* Derrick Legs: 4 angled steel legs tapering to the top */}
         {[
@@ -311,10 +376,14 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 4. CROWN BLOCK ================= */}
       <group
+        name="crown-block"
+        visible={isItemVisible('crown-block')}
         position={[0, 26, 0]}
         onPointerOver={(e) => handlePointerOver(e, 'crown-block')}
+        onPointerMove={(e) => handlePointerMove(e, 'crown-block')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'crown-block')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'crown-block')}
       >
         {/* Water Table Frame with heavy steel I-beam flanges */}
         <mesh position={[0, 0, 0]}>
@@ -377,9 +446,13 @@ export const Rig: React.FC<RigProps> = ({
 
         {/* Travelling Block Body */}
         <group
+          name="travelling-block"
+          visible={isItemVisible('travelling-block')}
           onPointerOver={(e) => handlePointerOver(e, 'travelling-block')}
+          onPointerMove={(e) => handlePointerMove(e, 'travelling-block')}
           onPointerOut={handlePointerOut}
           onClick={(e) => handleClick(e, 'travelling-block')}
+          onDoubleClick={(e) => handleDoubleClick(e, 'travelling-block')}
         >
           <mesh position={[0, 0.4, 0]}>
             <boxGeometry args={[1.1, 1.3, 1.2]} />
@@ -411,10 +484,14 @@ export const Rig: React.FC<RigProps> = ({
 
         {/* Top Drive Assembly (Suspended directly below hook) */}
         <group
+          name="top-drive"
+          visible={isItemVisible('top-drive')}
           position={[0, -1.8, 0]}
           onPointerOver={(e) => handlePointerOver(e, 'top-drive')}
+          onPointerMove={(e) => handlePointerMove(e, 'top-drive')}
           onPointerOut={handlePointerOut}
           onClick={(e) => handleClick(e, 'top-drive')}
+          onDoubleClick={(e) => handleDoubleClick(e, 'top-drive')}
         >
           {/* Main Motor Housing */}
           <mesh position={[0, 0.3, 0]}>
@@ -473,10 +550,14 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 6. ROTARY TABLE & DRILL STRING ================= */}
       <group
+        name="drill-string"
+        visible={isItemVisible('drill-string')}
         position={[0, 3.45, 0]}
         onPointerOver={(e) => handlePointerOver(e, 'drill-string')}
+        onPointerMove={(e) => handlePointerMove(e, 'drill-string')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'drill-string')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'drill-string')}
       >
         {/* Rotary Table Ring on Floor */}
         <mesh position={[0, 0.05, 0]}>
@@ -525,10 +606,14 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 7. DRAWWORKS ================= */}
       <group
+        name="drawworks"
+        visible={isItemVisible('drawworks')}
         position={[0, 3.8, -3.4]}
         onPointerOver={(e) => handlePointerOver(e, 'drawworks')}
+        onPointerMove={(e) => handlePointerMove(e, 'drawworks')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'drawworks')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'drawworks')}
       >
         {/* Main Winch Body Frame */}
         <mesh position={[0, 0.4, 0]}>
@@ -564,10 +649,14 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 8. BOP STACK (UNDER RIG FLOOR) ================= */}
       <group
+        name="bop-stack"
+        visible={isItemVisible('bop-stack')}
         position={[0, -0.6, 0]}
         onPointerOver={(e) => handlePointerOver(e, 'bop-stack')}
+        onPointerMove={(e) => handlePointerMove(e, 'bop-stack')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'bop-stack')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'bop-stack')}
       >
         {/* Annular Preventer (Spherical/Donut top with flange bolts) */}
         <mesh position={[0, 1.2, 0]}>
@@ -663,10 +752,14 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 9. CHOKE MANIFOLD & STANDPIPE ================= */}
       <group
+        name="choke-manifold"
+        visible={isItemVisible('choke-manifold')}
         position={[3.8, -1.98, 0.5]}
         onPointerOver={(e) => handlePointerOver(e, 'choke-manifold')}
+        onPointerMove={(e) => handlePointerMove(e, 'choke-manifold')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'choke-manifold')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'choke-manifold')}
       >
         <mesh position={[0, 0.4, 0]}>
           <boxGeometry args={[2.5, 0.8, 1.2]} />
@@ -694,10 +787,14 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 10. TRIPLEX MUD PUMPS ================= */}
       <group
+        name="mud-pumps"
+        visible={isItemVisible('mud-pumps')}
         position={[-10, -1.98, -1]}
         onPointerOver={(e) => handlePointerOver(e, 'mud-pumps')}
+        onPointerMove={(e) => handlePointerMove(e, 'mud-pumps')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'mud-pumps')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'mud-pumps')}
       >
         {/* Mud Pump #1 */}
         <group position={[0, 0, -2.5]}>
@@ -815,10 +912,14 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 11. MUD TANKS & AGITATORS ================= */}
       <group
+        name="mud-tanks"
+        visible={isItemVisible('mud-tanks')}
         position={[-9, -1.98, 6.5]}
         onPointerOver={(e) => handlePointerOver(e, 'mud-tanks')}
+        onPointerMove={(e) => handlePointerMove(e, 'mud-tanks')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'mud-tanks')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'mud-tanks')}
       >
         {/* Main Mud Pit Tank Container with wall stiffeners */}
         <mesh position={[0, 0.9, 0]}>
@@ -883,11 +984,15 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 12. SHALE SHAKERS ================= */}
       <group
+        name="shale-shakers"
+        visible={isItemVisible('shale-shakers')}
         ref={shakerVibeRef}
         position={[-8.5, -0.18, 12]}
         onPointerOver={(e) => handlePointerOver(e, 'shale-shakers')}
+        onPointerMove={(e) => handlePointerMove(e, 'shale-shakers')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'shale-shakers')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'shale-shakers')}
       >
         {/* Shaker Elevated Skid Frame */}
         <mesh position={[0, 0.2, 0]}>
@@ -932,10 +1037,14 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 13. GENERATOR SKID ================= */}
       <group
+        name="generators"
+        visible={isItemVisible('generators')}
         position={[11, -1.98, -6]}
         onPointerOver={(e) => handlePointerOver(e, 'generators')}
+        onPointerMove={(e) => handlePointerMove(e, 'generators')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'generators')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'generators')}
       >
         {/* Skid Platform */}
         <mesh position={[0, 0.2, 0]}>
@@ -979,10 +1088,14 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 14. MUD LOGGING CABIN ================= */}
       <group
+        name="mud-logging"
+        visible={isItemVisible('mud-logging')}
         position={[9, -1.98, 3]}
         onPointerOver={(e) => handlePointerOver(e, 'mud-logging')}
+        onPointerMove={(e) => handlePointerMove(e, 'mud-logging')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'mud-logging')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'mud-logging')}
       >
         {/* Insulated Pressurized Cabin Body with Corrugated Siding */}
         <mesh position={[0, 1.1, 0]}>
@@ -1027,10 +1140,14 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 15. COMPANY MAN & TOOLPUSHER TRAILER ================= */}
       <group
+        name="company-man"
+        visible={isItemVisible('company-man')}
         position={[9.5, -1.98, 9.5]}
         onPointerOver={(e) => handlePointerOver(e, 'company-man')}
+        onPointerMove={(e) => handlePointerMove(e, 'company-man')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'company-man')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'company-man')}
       >
         <mesh position={[0, 1.05, 0]}>
           <boxGeometry args={[3.6, 2.1, 4.4]} />
@@ -1051,10 +1168,14 @@ export const Rig: React.FC<RigProps> = ({
 
       {/* ================= 16. WASTE PIT & FLARE LINE ================= */}
       <group
+        name="waste-pit"
+        visible={isItemVisible('waste-pit')}
         position={[-13, -1.98, -9]}
         onPointerOver={(e) => handlePointerOver(e, 'waste-pit')}
+        onPointerMove={(e) => handlePointerMove(e, 'waste-pit')}
         onPointerOut={handlePointerOut}
         onClick={(e) => handleClick(e, 'waste-pit')}
+        onDoubleClick={(e) => handleDoubleClick(e, 'waste-pit')}
       >
         {/* Pit Depression / Berm with soil roughness */}
         <mesh position={[0, 0.1, 0]}>
@@ -1122,7 +1243,7 @@ export const Rig: React.FC<RigProps> = ({
       />
 
       {/* ================= 18. LOCATION GROUND, RIG MATS & BOP CELLAR ================= */}
-      <SiteGround />
+      <SiteGround isSubsurfaceMode={isSubsurfaceMode} />
 
       {/* ================= 19. INDUSTRIAL INFRASTRUCTURE, WORKSHOP & STORAGE ================= */}
       <SiteInfrastructure />

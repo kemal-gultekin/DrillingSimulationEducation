@@ -1,6 +1,6 @@
 {
   "name": "PetroSim - Drilling Simulation",
-  "description": "Educational 3D drilling rig simulation and learning platform for Petroleum and Natural Gas Engineering students.",
+  "description": "Petrol ve Doğalgaz Mühendisliği öğrencileri ve eğitmenleri için interaktif 3D kara sondaj sahası eğitim simülasyonu.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
